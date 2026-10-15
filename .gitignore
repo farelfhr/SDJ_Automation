@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files (keep examples)
+.env
+.env.local
+.env.test
+.env.production
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Docker
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database (local dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# Turbo
+.turbo/
+
+# pnpm
+.pnpm-debug.log
+
+# Vite
+*.local
+
+# Misc
+*.bak
+*.orig

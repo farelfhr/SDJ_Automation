@@ -1,0 +1,48 @@
+{
+  "name": "@sdj/infrastructure",
+  "version": "1.0.0",
+  "description": "Infrastructure layer - adapters and implementations",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./db": {
+      "import": "./dist/db/index.js",
+      "types": "./dist/db/index.d.ts"
+    },
+    "./ai": {
+      "import": "./dist/ai/index.js",
+      "types": "./dist/ai/index.d.ts"
+    },
+    "./google": {
+      "import": "./dist/google/index.js",
+      "types": "./dist/google/index.d.ts"
+    },
+    "./channel": {
+      "import": "./dist/channel/index.js",
+      "types": "./dist/channel/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "build:watch": "tsc --project tsconfig.build.json --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sdj/domain": "workspace:*",
+    "@sdj/contracts": "workspace:*",
+    "@sdj/config": "workspace:*",
+    "pg": "^8.13.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.7.0"
+  }
+}
