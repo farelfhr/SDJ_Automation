@@ -1,95 +1,110 @@
 # SDJ Assistant
 
-Pencatatan 15 aktivitas SDJ melalui DM WhatsApp ke Google Sheets pribadi. Backend TypeScript memakai Supabase PostgreSQL utama, parser deterministik, router AI Groq/Gemini/OpenRouter/NVIDIA, journal, readback, dan undo seluruh kelompok.
+**Catat aktivitas SDJ lewat WhatsApp, simpan langsung ke Google Sheets pribadi.**
 
-## Menjalankan di environment utama
+SDJ Assistant adalah asisten pencatatan **Spiritual Development Journey (SDJ)** untuk peserta yang menggunakan tracker SDJ. Proyek ini membantu mencatat ibadah dan kebiasaan harian melalui percakapan WhatsApp, melihat progres, serta memperbaiki catatan yang keliru.
 
-Backend utama kini terpasang di VPS Jagoan Hosting menggunakan systemd; sesi WhatsApp telah tersambung. Domain https://app.sdj-rumah-kepemimpinan.my.id sudah aktif melalui HTTPS. Pengaturan URL Google dikonfirmasi telah ditambahkan; login/Picker/aktivasi nyata pada domain ini masih perlu diuji. Ikuti [runbook VPS](docs/runbooks/vps-deployment.md) untuk status serta operasional. Jangan menjalankan gateway lokal dengan sesi yang sama selama gateway VPS aktif. Perintah lokal berikut untuk pengembangan, bukan cara menyalakan deployment VPS.
+Mengisi tracker setiap hari berarti membuka spreadsheet, mencari tanggal, lalu memilih baris aktivitas. SDJ Assistant menyederhanakan proses itu menjadi pesan seperti `zuhur 3, tilawah 2 halaman, dhuha sudah`. Aplikasi memeriksa instruksi, memperbarui tracker yang sudah dihubungkan, lalu mengirim hasilnya kembali ke WhatsApp.
 
-Semua proses membaca `.env` pada folder proyek ini. Konfigurasi database dan Google yang diberikan sudah dimasukkan ke file tersebut. Tidak ada database test terpisah.
+[Tentang aplikasi](https://app.sdj-rumah-kepemimpinan.my.id) · [Kebijakan privasi](https://app.sdj-rumah-kepemimpinan.my.id/privacy) · [Ketentuan penggunaan](https://app.sdj-rumah-kepemimpinan.my.id/terms)
 
-```powershell
-pnpm install --frozen-lockfile --ignore-scripts
-pnpm setup:runtime
-pnpm dev
+## Apa yang bisa dilakukan?
+
+- **Mencatat 15 aktivitas SDJ**, dengan maksimal lima aktivitas dalam satu pesan.
+- **Memahami instruksi sehari-hari**, termasuk angka dalam kata dan tanggal seperti “kemarin” atau “dua hari lalu”. Bot meminta penjelasan jika informasi belum lengkap.
+- **Menampilkan rekap harian dan progres bulanan** dari tracker pribadi.
+- **Mengoreksi dan membatalkan catatan.** Undo berlaku untuk seluruh kelompok pencatatan terakhir dalam 10 menit, selama nilainya belum berubah.
+- **Mengirim pengingat** pukul 07.00, 13.00, dan 20.00 WIB saat fitur diaktifkan oleh pengelola. Peserta bisa mengatur pengingat melalui chat.
+- **Memeriksa kesesuaian tracker** saat penghubungan, dengan pilihan memperbaiki aturan dan nilai input yang tidak sesuai.
+
+## Contoh penggunaan
+
+Kirim pesan melalui **DM WhatsApp** ke bot setelah tracker terhubung:
+
+| Kebutuhan                       | Contoh pesan                                        |
+| ------------------------------- | --------------------------------------------------- |
+| Menghubungkan tracker           | `daftar`                                            |
+| Mencatat satu aktivitas         | `zuhur 3`                                           |
+| Mencatat beberapa aktivitas     | `zuhur 3, tilawah 2 halaman, dhuha sudah`           |
+| Mencatat untuk hari sebelumnya  | `subuh kemarin 2`                                   |
+| Menggunakan bahasa sehari-hari  | `Dua hari lalu aku baca Quran dua setengah halaman` |
+| Mengoreksi nilai                | `Eh tilawah kemarin ganti jadi tiga halaman`        |
+| Melihat catatan hari ini        | `rekap hari ini`                                    |
+| Melihat progres bulanan         | `rekap bulan ini`                                   |
+| Membatalkan pencatatan terakhir | `batal`                                             |
+| Mematikan pengingat             | `reminder mati`                                     |
+| Mengaktifkan kembali pengingat  | `reminder aktif`                                    |
+| Memeriksa koneksi atau panduan  | `status` atau `bantuan`                             |
+
+Perintah sederhana seperti `zuhur 3` diproses langsung tanpa AI. Untuk memahami bahasa bebas yang lebih beragam, aplikasi menggunakan AI setelah peserta memberikan persetujuan. Ketersediaan pemahaman bahasa bebas mengikuti ketersediaan dan batas pemakaian penyedia AI.
+
+## Aktivitas yang didukung
+
+| Aktivitas                          | Bentuk catatan                              |
+| ---------------------------------- | ------------------------------------------- |
+| Subuh, Zuhur, Ashar, Maghrib, Isya | Skor 0–3 sesuai aturan tracker SDJ          |
+| Salat sunnah rawatib               | Jumlah kali pelaksanaan                     |
+| Tilawah Al-Quran                   | Jumlah halaman, termasuk pecahan            |
+| Murojaah Al-Quran                  | Sudah / belum                               |
+| Al-Matsurat pagi dan petang        | Sudah / belum untuk masing-masing waktu     |
+| Dhuha dan Tahajjud                 | Sudah / belum untuk masing-masing aktivitas |
+| Infaq / ajak infaq                 | Sudah / belum                               |
+| Puasa sunnah                       | Sudah / belum                               |
+| Merapikan kamar                    | Sudah / belum                               |
+
+Nilai kosong dibedakan dari skor `0` dan jawaban `belum`. Aplikasi mencatat nilai yang diberikan peserta dan tidak menyimpulkan suatu aktivitas sudah dilakukan hanya dari waktu atau isi percakapan yang tidak jelas.
+
+## Bagaimana mulai menggunakannya?
+
+1. Kirim `daftar` ke nomor WhatsApp bot yang diberikan pengelola SDJ Assistant.
+2. Buka tautan pribadi dari balasan bot, lalu login dengan akun Google.
+3. Pilih file Google Sheets dan tab tracker SDJ yang ingin dihubungkan. File harus berupa Google Sheets dan dapat Anda edit.
+4. Ikuti pemeriksaan tracker. Jika memilih **Validasi & perbaiki**, aplikasi menormalkan input aktivitas dan menyimpan cadangan nilai, rumus, serta aturan asal pada tab tersembunyi di file yang sama sebelum perubahan. Rumus rekap, target, catatan sel pribadi, dan tampilan dipertahankan; rumus tepat di sel input aktivitas dapat diganti dengan hasil yang valid atau dikosongkan.
+5. Konfirmasikan aktivasi melalui DM WhatsApp asal. Setelah aktif, Anda dapat mulai mencatat dan meminta rekap.
+
+Setiap peserta menghubungkan tracker pribadinya sendiri. Peserta cukup berinteraksi melalui WhatsApp dan browser untuk proses penghubungan.
+
+## Cara kerja dan privasi
+
+```mermaid
+flowchart LR
+    A[Peserta melalui WhatsApp] --> B[Backend SDJ Assistant]
+    B --> C[Periksa instruksi, identitas, dan tanggal]
+    C --> D[Google Sheets pribadi]
+    D --> E[Verifikasi hasil dan susun balasan]
+    E --> A
 ```
 
-API: `http://localhost:3000`. Pemeriksaan koneksi database: `http://localhost:3000/health/ready`. Worker dipakai bersama API oleh `pnpm dev`; jangan menjalankan worker kedua tanpa kebutuhan.
+Google Sheets menjadi sumber nilai aktivitas harian. Database menyimpan koneksi peserta, persetujuan, antrean pekerjaan, dan riwayat perubahan yang diperlukan untuk menjalankan layanan serta memulihkan kegagalan.
 
-Akses deployment dari perangkat lain memakai `https://app.sdj-rumah-kepemimpinan.my.id`. VPS menjalankan aplikasi secara mandiri; komputer lokal dan ngrok tidak diperlukan. Panduan ngrok lama tetap tersedia sebagai riwayat pengembangan pada [akses publik](docs/runbooks/public-access.md).
+- **Tracker terikat pada identitas peserta.** Isi pesan tidak dapat dipakai untuk memilih akun atau tracker peserta lain.
+- **Akses Google mengikuti file yang dipilih.** Penghubungan menggunakan login Google dan Google Picker, tanpa meminta akses umum ke seluruh Google Drive.
+- **AI membantu memahami instruksi.** Backend tetap memvalidasi aktivitas, nilai, tanggal, dan hak akses sebelum menulis. Teks instruksi serta konteks klarifikasi yang relevan dapat dikirim ke penyedia AI sesuai persetujuan peserta; token Google tidak dimasukkan ke permintaan AI.
+- **Hasil penulisan diperiksa ulang** sebelum aplikasi menyatakan catatan berhasil disimpan. Jika hasil belum dapat dipastikan, bot menyampaikan status tersebut.
+- **Peserta dapat menghentikan akses.** Perintah `putus koneksi` dan `hapus akun` meminta konfirmasi. Penghapusan akun aplikasi tidak menghapus file Google Sheets pribadi.
 
-Pairing WhatsApp, pada terminal lain saat gateway belum berjalan:
+Rincian pemrosesan data, penyedia layanan, dan masa penyimpanan tersedia pada [Kebijakan Privasi](https://app.sdj-rumah-kepemimpinan.my.id/privacy).
 
-```powershell
-pnpm whatsapp:pair
-```
+## Cakupan proyek
 
-Pindai QR langsung pada terminal. Setelah berhasil, jalankan:
+SDJ Assistant berfokus pada pencatatan tracker SDJ melalui DM WhatsApp. Saat ini satu peserta menghubungkan satu tracker aktif. Pencatatan mendukung hari ini dan tanggal lampau maksimal 31 hari ke belakang, selama tanggal tersedia pada tracker.
 
-```powershell
-pnpm openclaw gateway run
-```
+Operasi menambah nilai secara relatif, seperti “tambah tilawah 2 halaman”, belum didukung; gunakan nilai akhir yang ingin dicatat. Rekap bulanan membutuhkan header tanggal lengkap untuk periode yang diminta dan tidak menebak target pribadi. Pengingat mengikuti jadwal tetap, termasuk ketika catatan sudah terisi.
 
-Node 24.16.0, OpenClaw 2026.10.3, dan plugin WhatsApp 2026.10.3 tersedia pada `.local/`. Launcher memilih Node yang kompatibel itu. Folder `.local/` menyimpan state utama dan credential lokal; jangan commit atau membagikannya.
+Proyek ini masih dikembangkan. Riwayat implementasi, bukti pengujian, dan validasi yang masih perlu diselesaikan dicatat pada [status implementasi](docs/IMPLEMENTATION_STATUS.md).
 
-## Percakapan peserta
+## Teknologi dan isi repository
 
-Semua nomor dapat langsung mengirim DM tanpa pairing code peserta. Untuk mengakses tracker, setiap peserta tetap login Google dan mengaktifkan tracker pribadi melalui alur `daftar`. Pairing QR hanya berlaku untuk sesi ponsel akun bot, bukan peserta.
+Backend menggunakan **TypeScript dan Node.js**, dengan **Fastify** untuk API, **Supabase PostgreSQL** untuk data operasional, **Google OAuth / Picker / Sheets API** untuk penghubungan tracker, serta **OpenClaw dan bridge khusus** untuk kanal WhatsApp. Interpretasi bahasa bebas menggunakan router backend untuk Groq, Google Gemini, NVIDIA, dan OpenRouter sesuai konfigurasi serta persetujuan peserta.
 
-- “Saya mau menghubungkan tracker” untuk login Google, memilih tracker, dan konfirmasi DM.
-- “Tolong catat zuhurku tiga, tadi juga sudah dhuha” untuk mencatat beberapa aktivitas.
-- “Dua hari lalu aku baca Quran dua setengah halaman” untuk menyebut tanggal dan angka dengan bahasa sehari-hari.
-- “Eh tilawah kemarin ganti jadi tiga halaman” untuk koreksi nilai.
-- “Boleh lihat catatanku hari ini?” untuk rekap tracker sendiri.
-- “Tolong lihat progress saya bulan ini” untuk total dan keterisian aktivitas bulanan sampai hari ini.
-- “Kasih saja ringkasannya dalam format yang rapi” untuk membaca ulang periode rekap terakhir dalam percakapan yang sama (berlaku 30 menit).
-- “Kembalikan pencatatan yang barusan” untuk undo seluruh kelompok terakhir dalam sepuluh menit jika nilainya belum berubah.
-- “Akun saya sudah tersambung belum?” dan “Kamu bisa bantu apa saja?” untuk status dan panduan.
+| Direktori                                    | Isi                                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [`apps/api`](apps/api)                       | API, halaman publik, dan alur penghubungan Google                                   |
+| [`apps/worker`](apps/worker)                 | Pemrosesan pekerjaan dan pengingat di latar belakang                                |
+| [`packages`](packages)                       | Aturan aktivitas, validasi, logika aplikasi, integrasi layanan, dan bridge WhatsApp |
+| [`supabase/migrations`](supabase/migrations) | Perubahan struktur database                                                         |
+| [`tests`](tests)                             | Pengujian unit, integrasi, alur aplikasi, dan evaluasi interpretasi AI              |
+| [`docs`](docs)                               | Desain, keputusan teknis, status implementasi, dan panduan operasional              |
+| [`deploy`](deploy)                           | Konfigurasi dan skrip deployment                                                    |
 
-Tidak wajib memakai format khusus. Bot menanyakan informasi yang kurang; jawaban seperti “yang zuhur tiga aja” melengkapi pertanyaan aktif peserta yang sama selama sepuluh menit, termasuk ketika tanggal berganti. Jika belum lengkap, seluruh batch menunggu. Permintaan putus koneksi atau hapus akun selalu meminta konfirmasi terlebih dahulu. Perintah singkat lama tetap tersedia.
-
-Instruksi jelas dengan awalan seperti “tolong isi hari ini, subuh 3, zuhur 2, ashar 3, maghrib 3, isya 2” dan permintaan merapikan rekap diproses tanpa panggilan model. Bahasa bebas lain tetap bergantung ketersediaan dan batas panggilan provider; pesan yang ditolak belum ditulis dan tidak diputar ulang otomatis.
-
-Pesan beberapa baris, “lihat status hari ini”, “putuskan koneksi”, angka sederhana dalam kata, serta tanggal seperti “dua hari lalu” dapat diproses langsung. Bahasa bebas lain memakai prioritas provider sehat, maksimal dua percobaan/enam detik per percobaan dan deadline interpretasi 12 detik. Detail provider berada di halaman privasi; consent terbaru pada onboarding dan DM memakai kebijakan yang sama. Lihat [ADR 0012](docs/adr/0012-conversation-and-reminders.md).
-
-Bahasa bebas memerlukan persetujuan AI saat onboarding atau lewat DM. Jika tracker sudah aktif tetapi AI belum diizinkan, kirim instruksi bebas lalu balas “setuju” pada penjelasan bot; permintaan awal dilanjutkan tanpa login Google ulang. Persetujuan berlaku untuk peserta itu sendiri dan pertanyaan berlaku sepuluh menit. Status koneksi juga menampilkan status AI.
-
-Maksimal lima aktivitas per pesan, skor salat 0–3, rawatib dalam kali pelaksanaan, tilawah dalam halaman. Model hanya mengusulkan intent; otorisasi, tanggal, range, validasi, dan penulisan dipegang backend. Permintaan di luar fitur SDJ, increment, dan gabungan beberapa jenis tindakan dalam satu pesan belum didukung. Rekap bulanan memerlukan seluruh tanggal periode tersebut pada header tracker dan tidak menebak target pribadi.
-
-Saat menghubungkan tracker, **Validasi & perbaiki** menormalkan 15 aktivitas pada seluruh tanggal yang dikenali. Nilai yang jelas dikonversi otomatis (termasuk teks angka sesuai locale, teks TRUE/FALSE, dan 0/1 pada checkbox); nilai tidak valid dicadangkan lalu dikosongkan. Semua aturan mengikuti katalog SDJ. Rumus tepat di sel input diganti hasil yang valid; rumus rekap, target, catatan pribadi dan tampilan dipertahankan. Rekam nilai/rumus/aturan asal disimpan di tab cadangan tersembunyi pada file yang sama dan diverifikasi sebelum perubahan. Proses berjalan bertahap dan dilanjutkan otomatis, termasuk setelah refresh browser. Aktivasi tetap melalui konfirmasi DM. Izin edit, proteksi/merge atau struktur ambigu tetap membutuhkan penyelesaian akses/struktur, bukan dipaksakan lolos. Perbaikan tidak dibatalkan oleh undo catatan maupun rollback kode. Lihat [ADR 0009](docs/adr/0009-complete-tracker-normalization.md).
-
-## Reminder dan nama sapaan
-
-Peserta dengan akun, identitas WhatsApp, Google, dan tracker aktif mendapat pengingat pukul **07.00, 13.00, 20.00 WIB**, termasuk ketika SDJ sudah terisi. Template dan routing reminder memakai nol token AI serta tidak membaca Sheets. `reminder mati`, `reminder aktif`, dan `status reminder` diproses langsung. Fitur operasional memakai `REMINDERS_ENABLED`, default false; lihat [runbook reminder](docs/runbooks/reminders.md) dan status deployment sebelum mengaktifkan.
-
-Nama sapaan berasal dari profil Google yang diizinkan. Peserta lama dapat mengirim `perbarui profil` untuk memberi izin profil tanpa memilih atau memperbaiki tracker ulang; sampai itu, sapaan tetap umum. Pengaturan ini tidak memerlukan persetujuan AI.
-
-## Pemeriksaan pengembangan
-
-```powershell
-pnpm typecheck
-pnpm lint
-pnpm build
-pnpm test
-pnpm test:e2e
-pnpm test:integration
-pnpm eval:ai
-pnpm maintenance
-```
-
-Integration tests memakai Supabase utama dengan peserta sintetis, role terbatas, dan adapter Sheets sintetis. Hentikan worker dan gateway sebelum menjalankannya agar worker tidak mengambil job fixture. Unit dan E2E tidak memanggil layanan eksternal. Evaluasi AI live harus dipanggil eksplisit, misalnya `pnpm eval:ai --conversation --live --provider=groq --limit=1` untuk dataset percakapan; laporan dan resume tersimpan di `.local/evaluation/`.
-
-Migrasi utama tersimpan di `supabase/migrations/` dan telah diterapkan melalui konektor Supabase. `pnpm db:status`/`pnpm db:migrate` untuk administrasi memerlukan `DATABASE_URL_MIGRATOR`; API/worker tidak memakai credential tersebut. Jangan menjalankan SQL prototipe lama.
-
-## Dokumentasi
-
-- [Tutorial Google dari tombol ke tombol](docs/runbooks/google-oauth.md)
-- [Deployment dan operasional VPS](docs/runbooks/vps-deployment.md)
-- [Deployment domain dan hosting Diskon.com](docs/runbooks/diskon-deployment.md)
-- [Operasional dan pemulihan](docs/runbooks/operations.md)
-- [Status implementasi dan bukti pengujian](docs/IMPLEMENTATION_STATUS.md)
-- [Keputusan lingkup v2](docs/adr/0001-primary-environment-full-mvp.md)
-- [Spike dan gate OpenClaw](docs/spikes/openclaw-channel.md)
-- [Instruksi kontribusi](docs/AGENTS.md)
-
-Aplikasi belum dinyatakan siap pilot sebelum pairing, onboarding nyata, uji dua identitas, evaluasi AI lengkap, dan pemulihan backup dibuktikan. Prototipe lama disimpan di `legacy/` lokal dan dapat dipulihkan dari Git; folder tersebut bukan bagian runtime.
+Untuk mempelajari implementasi atau berkontribusi, mulai dari [peta dokumentasi](docs/README.md), [panduan kontribusi](docs/AGENTS.md), [panduan operasional](docs/runbooks/operations.md), dan [panduan deployment](docs/runbooks/vps-deployment.md). Pengaturan Google dijelaskan pada [panduan Google OAuth](docs/runbooks/google-oauth.md).
