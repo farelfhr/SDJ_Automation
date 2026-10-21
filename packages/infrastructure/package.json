@@ -7,42 +7,22 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./db": {
-      "import": "./dist/db/index.js",
-      "types": "./dist/db/index.d.ts"
-    },
-    "./ai": {
-      "import": "./dist/ai/index.js",
-      "types": "./dist/ai/index.d.ts"
-    },
-    "./google": {
-      "import": "./dist/google/index.js",
-      "types": "./dist/google/index.d.ts"
-    },
-    "./channel": {
-      "import": "./dist/channel/index.js",
-      "types": "./dist/channel/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --project tsconfig.build.json --watch",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.check.json"
   },
   "dependencies": {
-    "@sdj/domain": "workspace:*",
+    "@sdj/application": "workspace:*",
     "@sdj/contracts": "workspace:*",
+    "@sdj/domain": "workspace:*",
     "@sdj/config": "workspace:*",
-    "pg": "^8.13.0",
-    "zod": "^3.24.0"
+    "pg": "8.23.1",
+    "zod": "3.25.76"
   },
-  "devDependencies": {
-    "@types/pg": "^8.11.0",
-    "typescript": "^5.7.0"
-  }
+  "devDependencies": {}
 }

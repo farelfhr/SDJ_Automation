@@ -1,25 +1,7 @@
-# OpenClaw Configuration
+# Template dan kanal
 
-## Webhook Setup
+Katalog 15 aktivitas: `packages/domain/src/activities.ts`. Template awal memakai label kolom A dan tanggal asli baris 7 mulai kolom J. Adapter mencari label/header, memeriksa fingerprint, formula, proteksi, dan tipe nilai; range tidak berasal dari output model.
 
-1. Create an OpenClaw instance at https://app.opencloud.pl
-2. Configure webhook URL: `https://your-domain.com/webhook/message`
-3. Set webhook secret in environment
+Kanal memakai OpenClaw 2026.10.3 beserta `@openclaw/whatsapp` 2026.10.3 dan bridge `packages/openclaw-bridge`. Jalankan `pnpm whatsapp:pair` untuk QR, lalu `pnpm openclaw gateway run`. Konfigurasi serta sesi utama berada di `.local/openclaw-state`, dibuat launcher dan diabaikan Git.
 
-## Environment Variables
-
-```
-OPENCLAW_WEBHOOK_SECRET=your-secret
-OPENCLAW_API_KEY=your-api-key
-OPENCLAW_INSTANCE_ID=your-instance-id
-```
-
-## Testing Locally
-
-Use ngrok or similar for local development:
-
-```bash
-ngrok http 3000
-```
-
-Then configure the ngrok URL as your webhook in OpenClaw dashboard.
+Tidak ada layanan webhook pihak ketiga atau endpoint `/webhook/message` pada implementasi aktif. Ingress produk adalah `/internal/v1/channel-events` dengan HMAC, timestamp, nonce, dan scope akun.

@@ -1,8 +1,29 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "composite": true,
-    "incremental": true,
-    "tsBuildInfoFile": "./dist/.tsbuildinfo"
-  }
+  "files": [],
+  "references": [
+    {
+      "path": "packages/domain/tsconfig.build.json"
+    },
+    {
+      "path": "packages/contracts/tsconfig.build.json"
+    },
+    {
+      "path": "packages/config/tsconfig.build.json"
+    },
+    {
+      "path": "packages/application/tsconfig.build.json"
+    },
+    {
+      "path": "packages/infrastructure/tsconfig.build.json"
+    },
+    {
+      "path": "packages/testing/tsconfig.build.json"
+    },
+    {
+      "path": "apps/api/tsconfig.build.json"
+    },
+    {
+      "path": "apps/worker/tsconfig.build.json"
+    }
+  ]
 }

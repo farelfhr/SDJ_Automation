@@ -58,3 +58,5 @@ temp/
 # Misc
 *.bak
 *.orig
+.local/
+legacy/

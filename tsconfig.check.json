@@ -1,0 +1,38 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@sdj/domain": [
+        "packages/domain/src/index.ts"
+      ],
+      "@sdj/contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@sdj/config": [
+        "packages/config/src/index.ts"
+      ],
+      "@sdj/application": [
+        "packages/application/src/index.ts"
+      ],
+      "@sdj/infrastructure": [
+        "packages/infrastructure/src/index.ts"
+      ],
+      "@sdj/testing": [
+        "packages/testing/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "apps/*/src/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "tests/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "legacy",
+    "src"
+  ]
+}

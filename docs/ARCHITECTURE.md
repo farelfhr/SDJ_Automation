@@ -1,4 +1,12 @@
+> Implementasi v2: keputusan pengguna pada [ADR 0001](adr/0001-primary-environment-full-mvp.md) menggantikan lingkup v1 yang menyebut lima aktivitas, dua provider, database disposable, atau larangan Supabase. Runtime dan integration tests memakai .env serta Supabase utama. Bukti aktual ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
+Pembaruan 19 Oktober 2026: Routing prioritas, renderer pesan, OAuth profil, scheduler reminder dan outbox proaktif mengikuti [ADR 0012](adr/0012-conversation-and-reminders.md).
+
 # Architecture: SDJ Assistant
+
+Pembaruan AI 19 Oktober 2026: [ADR 0010](adr/0010-openrouter-free-fallback.md) menambahkan OpenRouter gratis, consent provider v2, maksimum empat interpretasi/30 detik dan pemulihan kegagalan JSON. Registry/kuota bersama serta journal penulisan tetap berlaku; tidak menambahkan retry model pada gateway.
+
+Pembaruan 19 Oktober 2026: [ADR 0009](adr/0009-complete-tracker-normalization.md) mengganti perbaikan parsial ADR 0007/0008 dengan normalisasi seluruh input. Perencanaan membaca nilai mentah, konversi deterministik, aturan standar untuk semua sel, backup terstruktur tersembunyi, verifikasi dan rekonsiliasi per batch. Proses onboarding memakai kelanjutan HTTP 202 terikat sesi; kandidat/challenge dibuat setelah scan akhir selesai. Rumus tepat di input harian dapat diganti setelah backup terverifikasi atas persetujuan pemilik, sedangkan rumus rekap/target/bobot dipertahankan. Fingerprint acuan, pemetaan adaptif ADR 0006, isolasi tenant dan validasi penulisan harian tetap berlaku.
 
 Versi: 1.0.0  
 Tanggal: 15 Oktober 2026  
@@ -160,7 +168,7 @@ Sesi chat aplikasi dikunci ke user dan identity tersebut. Hindari state percakap
 ### OAuth dan pairing
 
 1. Pesan `daftar` menghasilkan token onboarding acak 256 bit, hashed di DB, berlaku 10 menit dan sekali pakai.
-2. Tautan menukar token menjadi browser session cookie `HttpOnly`, `Secure`, `SameSite=Lax`, lalu redirect untuk menghilangkan token dari URL. Terapkan `Referrer-Policy: no-referrer` dan jangan memuat analitik pihak ketiga.
+2. Sesuai [ADR 0005](adr/0005-browser-onboarding-links.md), GET/HEAD tautan hanya menampilkan halaman awal; klik **Lanjutkan** memanggil POST exchange dengan pemeriksaan Origin. Token mengikat satu browser session cookie `HttpOnly`, `Secure`, `SameSite=Lax`; URL diganti sesudah berhasil. Resume hanya untuk cookie browser dan token tautan yang sama, tanpa memperpanjang expiry atau mengganti status OAuth. Referrer tidak memuat path/query token dan halaman tidak memuat analitik pihak ketiga.
 3. OAuth authorization code flow memakai `state` acak terikat sesi dan PKCE S256 jika didukung library. Validasi redirect URI tetap, state sekali pakai, expiry, issuer/audience/nonce untuk ID token bila digunakan. Identitas Google menggunakan subject stabil, bukan email sebagai primary key.
 4. Minta scope file minimal `drive.file`, ditambah scope identitas yang memang dibutuhkan. Peserta memilih file melalui Picker. Backend menerima file ID pilihan lalu melakukan verifikasi Google sendiri. Tidak mempercayai MIME atau permission dari browser.
 5. Minta offline access (`access_type=offline`) agar proses server dapat memperoleh refresh token. Simpan token terenkripsi. Jika Google tidak mengembalikan refresh token baru, gunakan yang lama hanya untuk subject dan connection yang sama. Jangan menghapus token valid atau menukar token antar akun.

@@ -1,178 +1,95 @@
-/**
- * Command Types
- *
- * Defines the command proposal structure after parsing.
- */
-
-import type { ActivityId, PrayerScore } from './activities.js';
-import type { DateResolution } from './dates.js';
-
-// Command action types
-export const COMMAND_ACTIONS = [
-  'SET_SCORE',
-  'QUERY',
-  'RECAP',
-  'UNDO',
-  'HELP',
-  'STATUS',
-  'UNKNOWN',
-] as const;
-export type CommandAction = typeof COMMAND_ACTIONS[number];
-
-// Command proposal - parsed intent
-export interface CommandProposal {
-  readonly action: CommandAction;
-  readonly activityId?: ActivityId;
-  readonly score?: PrayerScore;
-  readonly date?: DateResolution;
-  readonly rawText: string;
-  readonly confidence: number;
-  readonly requiresAI: boolean;
+import { type ActivityId, type TypedCellValue, DomainError, validateValue } from './activities.js';
+import { type DateReference, type DateContext, resolveDate } from './dates.js';
+export interface ProposalItem {
+  activity_id: ActivityId;
+  date_reference: DateReference;
+  value: number | boolean;
 }
-
-/**
- * Create a SET_SCORE command proposal
- */
-export function createSetScoreCommand(
-  activityId: ActivityId,
-  score: PrayerScore,
-  date: DateResolution,
-  rawText: string,
-  confidence: number = 1.0
-): CommandProposal {
-  return {
-    action: 'SET_SCORE',
-    activityId,
-    score,
-    date,
-    rawText,
-    confidence,
-    requiresAI: false,
+export interface DraftItem {
+  activity_id: ActivityId | null;
+  date_reference: DateReference | null;
+  value: number | boolean | null;
+}
+export type CommandProposal =
+  | {
+      schema_version: 2;
+      action: 'set_activities';
+      items: ProposalItem[];
+      continues_pending?: boolean | undefined;
+    }
+  | {
+      schema_version: 2;
+      action: 'daily_summary' | 'monthly_summary';
+      date_reference: DateReference;
+    }
+  | {
+      schema_version: 2;
+      action: 'clarify';
+      items: DraftItem[];
+      missing: ('activity' | 'date' | 'value')[];
+      continues_pending?: boolean | undefined;
+    }
+  | {
+      schema_version: 2;
+      action:
+        | 'help'
+        | 'connection_status'
+        | 'undo_last'
+        | 'connect'
+        | 'disconnect'
+        | 'delete_account'
+        | 'confirm_pending'
+        | 'cancel_pending'
+        | 'reminder_on'
+        | 'reminder_off'
+        | 'reminder_status'
+        | 'refresh_profile'
+        | 'format_summary'
+        | 'unsupported';
+    };
+export interface InterpretationContext {
+  localDate: string;
+  pending?: {
+    proposal: CommandProposal;
+    mode: 'slots' | 'date' | 'disconnect' | 'delete_account';
+    localDate: string;
   };
 }
-
-/**
- * Create a QUERY command proposal
- */
-export function createQueryCommand(
-  activityId: ActivityId,
-  date: DateResolution,
-  rawText: string
-): CommandProposal {
-  return {
-    action: 'QUERY',
-    activityId,
-    date,
-    rawText,
-    confidence: 1.0,
-    requiresAI: false,
-  };
+export interface ActorContext {
+  userId: string;
+  identityId: string;
+  sourceMessageId: string;
 }
-
-/**
- * Create a RECAP command proposal
- */
-export function createRecapCommand(
-  date: DateResolution,
-  rawText: string
-): CommandProposal {
-  return {
-    action: 'RECAP',
-    date,
-    rawText,
-    confidence: 1.0,
-    requiresAI: false,
-  };
+export interface ResolvedItem {
+  activityId: ActivityId;
+  localDate: string;
+  afterValue: TypedCellValue;
 }
-
-/**
- * Create an UNDO command proposal
- */
-export function createUndoCommand(rawText: string): CommandProposal {
-  return {
-    action: 'UNDO',
-    rawText,
-    confidence: 1.0,
-    requiresAI: false,
-  };
+export function resolveItems(items: readonly ProposalItem[], context: DateContext): ResolvedItem[] {
+  if (items.length < 1 || items.length > 5)
+    throw new DomainError('ITEM_LIMIT', 'Satu pesan dapat mencatat 1–5 aktivitas.');
+  const seen = new Set<string>();
+  return items.map((item) => {
+    const localDate = resolveDate(item.date_reference, context);
+    const key = `${item.activity_id}:${localDate}`;
+    if (seen.has(key))
+      throw new DomainError('DUPLICATE_TARGET', 'Aktivitas dan tanggal yang sama muncul dua kali.');
+    seen.add(key);
+    return {
+      activityId: item.activity_id,
+      localDate,
+      afterValue: validateValue(item.activity_id, item.value),
+    };
+  });
 }
-
-/**
- * Create a HELP command proposal
- */
-export function createHelpCommand(): CommandProposal {
-  return {
-    action: 'HELP',
-    rawText: 'bantuan',
-    confidence: 1.0,
-    requiresAI: false,
-  };
-}
-
-/**
- * Create a STATUS command proposal
- */
-export function createStatusCommand(): CommandProposal {
-  return {
-    action: 'STATUS',
-    rawText: 'status',
-    confidence: 1.0,
-    requiresAI: false,
-  };
-}
-
-/**
- * Create an UNKNOWN command proposal
- */
-export function createUnknownCommand(
-  rawText: string,
-  requiresAI: boolean = false,
-  confidence: number = 0.0
-): CommandProposal {
-  return {
-    action: 'UNKNOWN',
-    rawText,
-    confidence,
-    requiresAI,
-  };
-}
-
-/**
- * Check if command is valid for processing
- */
-export function isValidCommand(proposal: CommandProposal): boolean {
-  switch (proposal.action) {
-    case 'SET_SCORE':
-      return (
-        proposal.activityId !== undefined &&
-        proposal.score !== undefined &&
-        proposal.date !== undefined
-      );
-    case 'QUERY':
-      return proposal.activityId !== undefined && proposal.date !== undefined;
-    case 'RECAP':
-      return proposal.date !== undefined;
-    case 'UNDO':
-    case 'HELP':
-    case 'STATUS':
-      return true;
-    default:
-      return false;
-  }
-}
-
-/**
- * Get command action display name
- */
-export function getActionDisplayName(action: CommandAction): string {
-  const names: Record<CommandAction, string> = {
-    SET_SCORE: 'Mencatat Skor',
-    QUERY: 'Melihat Skor',
-    RECAP: 'Ringkasan Harian',
-    UNDO: 'Batalkan',
-    HELP: 'Bantuan',
-    STATUS: 'Status',
-    UNKNOWN: 'Tidak Dikenal',
-  };
-  return names[action];
+export function rejectTargetOverride(text: string): void {
+  if (
+    /https?:\/\/|\b(?:user_id|tracker_id|spreadsheet_id|api_key|service_role)\b|(?:milik|punya)\s+(?:peserta|orang|user)|(?:isi|ubah|baca)\s+(?:tracker|sheet)\s+(?:orang|peserta)|abaikan\s+(?:semua\s+)?(?:aturan|instruksi)/i.test(
+      text
+    )
+  )
+    throw new DomainError(
+      'IDENTITY_SCOPE_INVALID',
+      'Instruksi tidak boleh memilih identitas atau tracker lain.'
+    );
 }

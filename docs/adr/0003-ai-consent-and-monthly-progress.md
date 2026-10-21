@@ -1,0 +1,11 @@
+# ADR 0003: izin AI tanpa menghubungkan ulang dan progres bulanan
+
+Tanggal: 16 Oktober 2026. Status: perbaikan sesuai laporan pengguna.
+
+Tracker aktif tidak berarti pemrosesan AI sudah diizinkan. Perintah deterministik dapat menulis ketika izin AI nonaktif; sebelumnya instruksi bebas mengembalikan pesan yang keliru menyuruh peserta menghubungkan ulang. Peserta yang sudah terhubung sekarang menerima penjelasan provider serta pilihan persetujuan lewat DM. Persetujuan eksplisit dalam sepuluh menit menyimpan izin pada user yang terautentikasi dan melanjutkan instruksi awal. Penolakan tidak memutus tracker. Pending terenkripsi, terikat identity, dan mempertahankan tanggal instruksi awal ketika melewati tengah malam. Retry setelah izin tersimpan tetap dapat melanjutkan instruksi yang sama melalui journal/deduplikasi yang berlaku.
+
+Pilihan AI pada browser dipulihkan dari sesi setelah OAuth dan pilihan terkini disimpan saat memilih tracker. Pesan aktivasi dan status DM menampilkan status izin AI secara terpisah dari status koneksi. Tidak ada pemberian izin massal atau pengubahan preferensi peserta lain. Pembaruan memakai transaksi tenant dan role aplikasi yang sudah ada; tidak memerlukan migrasi.
+
+Permintaan progres bulanan kini memakai intent baca `monthly_summary`. Backend menghitung dari awal bulan sampai hari ini untuk bulan berjalan, atau seluruh bulan lampau sesuai tanggal acuan yang diizinkan. Laporan memuat total/rata-rata skor salat, total rawatib/halaman tilawah, jumlah hari checkbox benar, dan jumlah hari terisi. Blank, nol, dan false dibedakan; persentase target pribadi tidak ditebak. Semua tanggal harus tersedia pada header tracker agar tidak menghasilkan laporan parsial yang tampak lengkap. Permintaan bulan yang tidak tersedia diberi pesan tanggal tidak ditemukan.
+
+Pembacaan banyak sel memakai satu range persegi yang ditentukan dari binding dan header tervalidasi agar URL tidak memuat ratusan range. Perubahan ini hanya pada read; journal/write/readback dan batas lima item pencatatan tetap berlaku. Fixture dan pengujian memakai data sintetis, termasuk integration pada Supabase utama. Evaluasi provider untuk dua frasa laporan pengguna dicatat pada status implementasi.

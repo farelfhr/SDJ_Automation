@@ -5,25 +5,15 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --project tsconfig.build.json --watch",
-    "dev": "node --watch --import tsx src/index.ts",
-    "start": "node dist/index.js",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "build": "tsc -b tsconfig.build.json",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@sdj/domain": "workspace:*",
-    "@sdj/contracts": "workspace:*",
-    "@sdj/application": "workspace:*",
     "@sdj/infrastructure": "workspace:*",
     "@sdj/config": "workspace:*",
-    "pino": "^9.6.0",
-    "pino-pretty": "^11.3.0"
+    "@sdj/application": "workspace:*",
+    "@sdj/contracts": "workspace:*",
+    "@sdj/domain": "workspace:*"
   },
-  "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
-  }
+  "devDependencies": {}
 }

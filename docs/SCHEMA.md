@@ -1,4 +1,10 @@
+> Implementasi v2: keputusan pengguna pada [ADR 0001](adr/0001-primary-environment-full-mvp.md) menggantikan lingkup v1 yang menyebut lima aktivitas, dua provider, database disposable, atau larangan Supabase. Runtime dan integration tests memakai .env serta Supabase utama. Bukti aktual ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
+Pembaruan 19 Oktober 2026: Tambahan schema aktif: preferensi/nama terenkripsi pada users, purpose/kebijakan pada sesi onboarding, rute interpretasi pada commands, durasi provider_attempts, reminder_occurrences, dan delivery_origin/FK reminder. Lihat [ADR 0012](adr/0012-conversation-and-reminders.md) dan migrasi 20261019085415.
+
 # Schema dan Kontrak: SDJ Assistant
+
+Pembaruan 19 Oktober 2026: migrasi `20261019062439_openrouter_free_fallback.sql` menambahkan provider `openrouter` dengan bucket bersama dan gate SQL consent `free-providers-v2`. Izin awal v1 tetap untuk tiga provider asal; pembaruan v2 diminta melalui DM sebelum OpenRouter. `User.providerPolicyVersion` membawa versi persetujuan untuk use case; detail pada [ADR 0010](adr/0010-openrouter-free-fallback.md).
 
 Versi: 1.0.0  
 Tanggal: 15 Oktober 2026  
@@ -207,6 +213,16 @@ Label di atas diringkas tanpa emoji untuk keterbacaan. Konfigurasi implementasi 
 FK triple `(tracker_id,user_id,template_id)` memastikan definisi template cocok dengan tracker. Unique `(tracker_id,activity_id)`, unique `(tracker_id,row_index)` untuk profil awal, dan unique `(id,user_id,tracker_id,activity_id)` untuk parent key mutation. Binding tanpa aktivitas enabled tidak boleh dipakai menulis walaupun row cocok.
 
 Date-to-column mapping adalah cache yang dapat direkonstruksi dari header Google. Tidak memerlukan tabel authoritative. Cache key mencakup tracker ID, config version, dan fingerprint. Snapshot koordinat spesifik disimpan pada mutation.
+
+Implementasi adaptif mengikuti [ADR 0006](adr/0006-adaptive-tracker-configuration.md). Binding menyimpan baris yang ditemukan dan hash label aktual yang dinormalisasi. Kolom label/baris header/pemetaan tanggal direkonstruksi dari sheet dan termasuk fingerprint adaptif; tidak ada kolom database baru. Fingerprint acuan mempertahankan format lama. Ringkasan onboarding berisi mode, jumlah aktivitas/tanggal dan rentang tanggal tanpa nilai aktivitas.
+
+[ADR 0007](adr/0007-automatic-input-validation-repair.md) menambahkan field opsional `configuration.repairedValidationCells` (jumlah sel) pada hasil validasi browser/DM. `TrackerGateway.validate` dapat memperbaiki aturan input saat onboarding; pembacaan `inspect` tetap tidak menulis aturan. Tidak ada perubahan schema database atau nilai catatan. Aturan yang baru dikirim harus terverifikasi sebelum hasil validasi dinyatakan berhasil.
+
+[ADR 0008](adr/0008-legacy-boolean-numeric-inputs.md) menambahkan `configuration.resetInputCells` (jumlah sel, opsional). Boolean native pada aktivitas angka disimpan pada note sel sebagai rekam pemulihan sebelum dikosongkan. Hasil clear dan note dibaca ulang sebelum koneksi dinyatakan lolos; tidak ada perubahan schema database.
+
+[ADR 0009](adr/0009-complete-tracker-normalization.md) mengganti backup note dengan tab cadangan tersembunyi dan menambahkan `convertedInputCells` (opsional). Port `repairStep` mengembalikan `TrackerValidation` atau `TrackerRepairProgress`; adapter lama tetap memakai `validate`. Rekam mentah mendukung number/bool/string/formula/effective value, note dan aturan asal; normalizer menghasilkan typed number/boolean/blank dan aturan standar. Seluruh JSON backup diverifikasi dan tujuan diregenerasi dari katalog/layout sebelum ditulis. Tidak ada migrasi database.
+
+`POST /connect/tracker` menerima `repair_version:1` dan `continuation_token?` (maksimal 4096 karakter). Respons 202 berisi `accepted:false`, `repairing:true`, `continuationToken`, `progress`, serta `retrying?`; respons akhir 200 tetap `{accepted:true,configuration}`. Token AES-GCM mengikat user/sesi/koneksi/file/tab/run/fingerprint/expiry dan tidak menyimpan nilai aktivitas. Klien lama yang menerima progres diarahkan memuat ulang melalui 409 `CLIENT_UPDATE_REQUIRED`. Tidak menyimpan kandidat tracker/binding atau mengirim challenge sebelum hasil akhir terverifikasi.
 
 ## 6. Pesan, command, dan perubahan
 
@@ -622,8 +638,9 @@ Semua endpoint adalah milik produk yang akan dibuat. Bukan endpoint bawaan OpenC
 | `POST /internal/v1/deliveries/claim` | Bridge HMAC scope account | Delivery dengan route server dan lease token |
 | `POST /internal/v1/deliveries/:id/ack` | Bridge HMAC + lease | Delivery sent, tidak memicu command |
 | `POST /internal/v1/deliveries/:id/nack` | Bridge HMAC + lease | Retry/unknown delivery |
-| `GET /connect?token=...` | Token onboarding | Tukar ke session cookie lalu redirect |
-| `GET /connect/google/start` | Browser session | OAuth redirect |
+| `GET /connect?token=...` | Tautan onboarding | Halaman awal tanpa konsumsi token; aman untuk GET/HEAD/pratinjau |
+| `POST /connect/exchange` | Token + Origin + custom header; cookie asli untuk resume | Ikat satu browser, atau lanjutkan sesi cookie+token yang sama; TTL tidak diperpanjang |
+| `POST /connect/google/start` | Browser session + CSRF | URL OAuth untuk navigasi browser |
 | `GET /connect/google/callback` | State + browser session | Candidate Google connection |
 | `POST /connect/tracker` | Browser session + CSRF | Validasi file hasil Picker, belum aktivasi |
 | `GET /connect/status` | Browser session | Status onboarding sendiri tanpa token |

@@ -1,4 +1,10 @@
+> Implementasi v2: keputusan pengguna pada [ADR 0001](adr/0001-primary-environment-full-mvp.md) menggantikan lingkup v1 yang menyebut lima aktivitas, dua provider, database disposable, atau larangan Supabase. Runtime dan integration tests memakai .env serta Supabase utama. Bukti aktual ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
+Pembaruan 19 Oktober 2026: Perubahan percakapan, consent, deadline AI dan reminder WIB mengikuti [ADR 0012](adr/0012-conversation-and-reminders.md).
+
 # PRD: SDJ Assistant
+
+Pembaruan 19 Oktober 2026: [ADR 0010](adr/0010-openrouter-free-fallback.md) menambahkan OpenRouter gratis sebagai cadangan dengan persetujuan provider v2 melalui DM. Pesan beberapa baris dan permintaan status harian sederhana berjalan tanpa AI; fallback memiliki batas waktu/panggilan dan tidak menjanjikan layanan gratis tanpa hambatan.
 
 Versi dokumen: 1.0.0  
 Tanggal: 15 Oktober 2026  
@@ -103,6 +109,8 @@ Peserta adalah unit isolasi data. Kelompok/program belum menjadi tenant organisa
 Tidak meminta password Google atau kode MFA melalui chat. Peserta yang hanya punya hak viewer diarahkan meminta editor kepada pemilik file, tanpa menyatakan sudah terhubung.
 
 ### B. Pencatatan
+
+Pembaruan onboarding, 19 Oktober 2026: [ADR 0009](adr/0009-complete-tracker-normalization.md) menormalkan seluruh sel aktivitas/tanggal yang dikenali agar kesalahan tipe, nilai di luar domain, maupun aturan input tidak memerlukan edit manual. Nilai jelas dikonversi; nilai lain dicadangkan lalu dikosongkan. Rumus tepat di sel input dicadangkan dan diganti hasil yang valid atau dikosongkan. Cadangan nilai/rumus/aturan/note asal persisten pada tab tersembunyi file yang sama sebelum perubahan. Proses bertahap berlanjut otomatis dan setelah refresh; hasil dilaporkan setelah pembacaan ulang. Rumus rekap/target/bobot, tampilan dan angka/boolean yang sudah benar dipertahankan. Izin, merge/proteksi dan struktur ambigu tetap menjadi kendala akses/struktur. Aktivasi tetap mensyaratkan konfirmasi DM; perbaikan tidak dibatalkan oleh pembatalan onboarding atau undo pencatatan.
 
 Peserta: `zuhur, 3`  
 Bot setelah verifikasi: `Tersimpan: Zuhur, 15 Oktober 2026, skor 3.`

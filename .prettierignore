@@ -1,0 +1,5 @@
+.local/
+legacy/
+node_modules/
+**/dist/
+**/*.tsbuildinfo

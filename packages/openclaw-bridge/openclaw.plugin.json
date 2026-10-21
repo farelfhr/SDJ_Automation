@@ -1,0 +1,18 @@
+{
+  "id": "sdj-bridge",
+  "name": "SDJ channel bridge",
+  "description": "Meneruskan DM WhatsApp ke backend SDJ sebelum dispatch model.",
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiBaseUrl": { "type": "string" },
+      "accountId": { "type": "string" },
+      "keyId": { "type": "string" },
+      "keyEnv": { "type": "string" },
+      "pollIntervalMs": { "type": "integer", "minimum": 1000, "maximum": 30000 }
+    },
+    "required": ["apiBaseUrl", "accountId", "keyId", "keyEnv"]
+  }
+}

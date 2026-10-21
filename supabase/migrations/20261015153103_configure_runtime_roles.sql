@@ -1,0 +1,2 @@
+-- Runtime password verifiers were provisioned through the connected Supabase management session.
+-- No credential or verifier is committed. Fresh deployments use setup:runtime with a migrator credential.

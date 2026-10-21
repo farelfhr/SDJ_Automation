@@ -1,6 +1,4 @@
-/**
- * Application layer public API
- */
-
-export * from './ports/index.js';
-export * from './use-cases/index.js';
+export * from './ports.js';
+export * from './service.js';
+export * from './messages.js';
+export * from './reminders.js';

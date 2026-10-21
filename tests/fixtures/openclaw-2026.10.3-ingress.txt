@@ -1,0 +1,138 @@
+// OpenClaw 2026.10.3 (MIT), https://github.com/openclaw/openclaw
+// Exact adapter excerpts; upstream monitor SHA256 99d98dd499b75fcf01b7597015b8266f0f469d6eea6d4a5f615bfc102f51ba8d
+function createWhatsAppInboundMessageNormalizer(options) {
+	const { socketSession, groupMetadata } = options;
+	const shouldSkipRecentOutboundEcho = (msg) => {
+		const id = msg.key?.id ?? void 0;
+		const remoteJid = msg.key?.remoteJid;
+		if (!msg.key?.fromMe || !id || !remoteJid || !isRecentOutboundMessage({
+			accountId: options.accountId,
+			remoteJid,
+			alternateRemoteJid: msg.key?.remoteJidAlt,
+			messageId: id
+		})) return false;
+		options.logVerbose(`Skipping recent outbound WhatsApp echo ${id} for ${remoteJid}`);
+		return true;
+	};
+	const normalize = async (msg) => {
+		const id = msg.key?.id ?? void 0;
+		const remoteJid = msg.key?.remoteJid;
+		if (!remoteJid || remoteJid.endsWith("@status") || remoteJid.endsWith("@broadcast")) return null;
+		const group = isJidGroup$1(remoteJid) === true;
+		if (shouldSkipRecentOutboundEcho(msg)) return null;
+		if (!hasInboundUserContent(msg.message ?? void 0)) return null;
+		const participantJid = msg.key?.participant ?? void 0;
+		const from = group ? remoteJid : await socketSession.resolveInboundJid(remoteJid);
+		if (!from) return null;
+		const senderE164 = group ? participantJid ? await socketSession.resolveInboundJid(participantJid) : null : from;
+		let groupSubject;
+		let groupParticipants;
+		if (group) {
+			const meta = await groupMetadata.get(remoteJid);
+			groupSubject = meta.subject;
+			groupParticipants = meta.participants;
+		}
+		const messageTimestampSeconds = options.parseTimestampSeconds(msg.messageTimestamp);
+		const messageTimestampMs = messageTimestampSeconds !== void 0 ? messageTimestampSeconds * 1e3 : void 0;
+		const access = await checkInboundAccessControl({
+			cfg: options.loadConfig?.() ?? options.cfg,
+			accountId: options.accountId,
+			from,
+			selfE164: socketSession.self.e164 ?? null,
+			senderE164,
+			senderJid: participantJid,
+			group,
+			pushName: msg.pushName ?? void 0,
+			isFromMe: Boolean(msg.key?.fromMe),
+			messageTimestampMs,
+			connectedAtMs: socketSession.connectedAtMs,
+			verbose: options.verbose,
+			sock: { sendMessage: (jid, content) => socketSession.sendTrackedMessage(jid, content) },
+			remoteJid
+		});
+		if (!access.allowed) return null;
+		return {
+			id,
+			remoteJid,
+			group,
+			participantJid,
+			from,
+			senderE164,
+			groupSubject,
+			groupParticipants,
+			messageTimestampMs,
+			access
+		};
+	};
+	return {
+		normalize,
+		shouldSkipRecentOutboundEcho
+	};
+}
+	const handleMessagesUpsert = async (upsert) => {
+		if (upsert.type !== "notify" && upsert.type !== "append") return;
+		for (const msg of upsert.messages ?? []) {
+			rememberBaileysMessage(msg.key?.remoteJid, msg.key?.id, msg.message);
+			const receiveOrder = nextReceiveOrder++;
+			let approvalReactionResolved = false;
+			try {
+				approvalReactionResolved = await resolveApprovalReaction(msg);
+			} catch (error) {
+				inboundLogger.warn({ error: formatError(error) }, "whatsapp approval reaction resolution failed; admitting reaction for durable replay");
+			}
+			if (approvalReactionResolved) continue;
+			const receivedAt = Date.now();
+			const skipStaleAppend = shouldSkipStaleAppend(msg, upsert.type);
+			const skipRecentOutboundEcho = shouldSkipRecentOutboundEcho(msg);
+			const remoteJid = msg.key?.remoteJid;
+			const id = msg.key?.id;
+			const durableId = remoteJid && id ? createWhatsAppDurableInboundMessageId({
+				remoteJid,
+				id
+			}) : void 0;
+			let resolvePrepared;
+			if (durableId && !preparedInboundByDurableId.has(durableId)) {
+				if (preparedInboundByDurableId.size >= 1e3) {
+					const oldest = preparedInboundByDurableId.keys().next().value;
+					if (oldest !== void 0) preparedInboundByDurableId.delete(oldest);
+				}
+				const prepared = createDeferred();
+				resolvePrepared = prepared.resolve;
+				preparedInboundByDurableId.set(durableId, prepared.promise);
+			}
+			const finishPreparation = (inbound, keepForDrain = false) => {
+				resolvePrepared?.(inbound);
+				if (!keepForDrain && durableId && resolvePrepared) preparedInboundByDurableId.delete(durableId);
+			};
+			let result;
+			try {
+				result = await durableInboundMonitor.admit({
+					message: msg,
+					upsertType: upsert.type,
+					skipStaleAppend,
+					skipRecentOutboundEcho,
+					receivedAt,
+					receiveOrder
+				}, { receivedAt });
+			} catch (error) {
+				finishPreparation(void 0);
+				const formattedError = formatError(error);
+				inboundLogger.error({ error: formattedError }, "failed persisting durable WhatsApp inbound after retries; message dropped");
+				inboundConsoleLog.error(`Failed persisting durable WhatsApp inbound after retries; message dropped: ${formattedError}`);
+				continue;
+			}
+			if (result.kind === "durable" && result.queueResult.kind === "completed") {
+				finishPreparation(void 0);
+				const inbound = await normalizeInboundMessage(msg);
+				if (inbound) await maybeMarkNonSelfChatReadReceipt(inbound, buildReadReceiptTarget(inbound));
+			} else if (result.kind === "durable" && result.queueResult.kind === "accepted") {
+				if (skipRecentOutboundEcho) finishPreparation(null);
+				else try {
+					finishPreparation(await normalizeInboundMessage(msg), true);
+				} catch (error) {
+					finishPreparation(void 0);
+					inboundLogger.warn({ error: formatError(error) }, "failed preparing WhatsApp inbound identity; durable drain will normalize again");
+				}
+			} else finishPreparation(void 0);
+		}
+	};

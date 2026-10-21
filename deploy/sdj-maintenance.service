@@ -1,0 +1,20 @@
+[Unit]
+Description=SDJ retention maintenance
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=sdj
+Group=sdj
+WorkingDirectory=/opt/sdj/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/sdj/maintenance.env
+ExecStart=/opt/sdj/node/bin/node --import tsx scripts/maintenance.ts
+TimeoutStartSec=300
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+MemoryMax=192M

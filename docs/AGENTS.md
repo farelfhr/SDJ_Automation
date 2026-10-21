@@ -1,3 +1,5 @@
+> Implementasi v2: keputusan pengguna pada [ADR 0001](adr/0001-primary-environment-full-mvp.md) menggantikan lingkup v1 yang menyebut lima aktivitas, dua provider, database disposable, atau larangan Supabase. Runtime dan integration tests memakai .env serta Supabase utama. Bukti aktual ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
 # AGENTS.md
 
 Instruksi repository untuk Codex, Claude Code, dan coding agent lain. Versi 1.0.0, 15 Oktober 2026. Dokumen ini menjelaskan cara bekerja pada produk, bukan konfigurasi runtime OpenClaw dan bukan system prompt bot peserta.
@@ -49,7 +51,7 @@ Jangan menggunakan subagent hanya karena file ini bernama AGENTS.md. Delegasi me
 7. OAuth/Picker memerlukan izin Google yang sah. Jangan mengubah file `.xlsx` seolah native Google Sheets.
 8. Token terenkripsi di backend, tidak pada prompt atau workspace OpenClaw.
 9. Sel target diselesaikan dari binding dan header tanggal yang tervalidasi. Jangan hardcode `CG10` atau hari-ke-n sebagai implementasi umum.
-10. Jangan menimpa formula, target, bobot, atau summary cells. Baca formula marker, struktur, dan nilai sebelum menulis.
+10. Jangan menimpa formula rekap, target, bobot, atau summary cells. Baca formula marker, struktur, dan nilai sebelum menulis. Pengecualian yang disetujui pemilik pada [ADR 0009](adr/0009-complete-tracker-normalization.md): rumus tepat di sel input harian boleh dinormalisasi saat onboarding setelah rekam pemulihan persisten diverifikasi; bukan izin menimpa rumus di luar wilayah input atau saat rekap/pencatatan biasa.
 11. Blank, angka 0, dan boolean false berbeda. Jangan mengubah salah satunya menjadi yang lain secara diam-diam.
 12. Penulisan bertipe dengan RAW, bukan formula/string hasil user yang dievaluasi spreadsheet.
 

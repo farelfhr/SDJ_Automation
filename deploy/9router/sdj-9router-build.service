@@ -1,0 +1,29 @@
+[Unit]
+Description=9Router bounded staging build (no production traffic)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ninerouter
+Group=ninerouter
+WorkingDirectory=/opt/9router/releases/87a74e1bda3677193c6f71a7e2100c90311f0689
+Environment=HOME=/var/lib/9router
+PermissionsStartOnly=true
+ExecStartPre=/bin/bash /opt/9router/tools/build-limits.sh
+ExecStart=/bin/bash /opt/9router/tools/build.sh
+CPUAccounting=true
+CPUQuota=50%
+MemoryAccounting=true
+MemoryLimit=512M
+TasksMax=64
+Nice=19
+IOSchedulingClass=idle
+LimitCORE=0
+TimeoutStartSec=1800
+TimeoutStopSec=10
+KillMode=control-group
+Restart=no
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full

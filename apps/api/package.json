@@ -5,29 +5,17 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --project tsconfig.build.json --watch",
-    "dev": "node --watch --import tsx src/index.ts",
-    "start": "node dist/index.js",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "build": "tsc -b tsconfig.build.json",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@sdj/domain": "workspace:*",
     "@sdj/contracts": "workspace:*",
+    "@sdj/domain": "workspace:*",
     "@sdj/application": "workspace:*",
     "@sdj/infrastructure": "workspace:*",
     "@sdj/config": "workspace:*",
-    "fastify": "^5.1.0",
-    "@fastify/cors": "^10.0.0",
-    "@fastify/helmet": "^12.0.0",
-    "@fastify/rate-limit": "^10.0.0",
-    "pino": "^9.6.0",
-    "pino-pretty": "^11.3.0"
+    "fastify": "5.12.7",
+    "zod": "3.25.76"
   },
-  "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
-  }
+  "devDependencies": {}
 }

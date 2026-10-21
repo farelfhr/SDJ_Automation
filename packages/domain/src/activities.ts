@@ -1,69 +1,231 @@
-/**
- * Activity Identifiers and Scoring
- *
- * Core domain values for spiritual activities and their scoring rules.
- */
-
-// Activity Types
-export const ACTIVITY_TYPES = ['prayer', 'tilawah', 'dhuha', 'tahajjud', 'shaum'] as const;
-export type ActivityType = typeof ACTIVITY_TYPES[number];
-
-// Prayer identifiers (Indonesian)
-export const PRAYER_IDS = ['subuh', 'zuhur', 'ashar', 'maghrib', 'isya'] as const;
-export type PrayerId = typeof PRAYER_IDS[number];
-
-// Activity ID - combines type and specific identifier
-export interface ActivityId {
-  readonly type: ActivityType;
-  readonly id: string;
-  readonly displayName: string;
+export const ACTIVITY_IDS = [
+  'subuh',
+  'dzuhur',
+  'ashar',
+  'maghrib',
+  'isya',
+  'rawatib',
+  'tilawah',
+  'murojaah',
+  'matsurat_pagi',
+  'matsurat_petang',
+  'dhuha',
+  'tahajjud',
+  'infaq',
+  'puasa_sunnah',
+  'merapikan_kamar',
+] as const;
+export type ActivityId = (typeof ACTIVITY_IDS)[number];
+export type TypedCellValue =
+  { kind: 'blank' } | { kind: 'number'; value: number } | { kind: 'boolean'; value: boolean };
+export interface ActivityDefinition {
+  id: ActivityId;
+  label: string;
+  aliases: readonly string[];
+  sourceLabels: readonly string[];
+  kind: 'number' | 'boolean';
+  integer: boolean;
+  min: number;
+  max: number | null;
+  unit: string;
 }
-
-// Score values (0-3 for prayers, 0-N for others)
-export const PRAYER_SCORE_VALUES = [0, 1, 2, 3] as const;
-export type PrayerScore = typeof PRAYER_SCORE_VALUES[number];
-
-export const SCORE_LABELS: Record<PrayerScore, string> = {
-  0: 'tidak dilaksanakan',
-  1: 'berjamaah',
-  2: 'sendiri',
-  3: 'berjamaah + tepat waktu',
-} as const;
-
-// Default activities for SDJ v1
-export const DEFAULT_ACTIVITIES: ActivityId[] = [
-  { type: 'prayer', id: 'subuh', displayName: 'Sholat Subuh' },
-  { type: 'prayer', id: 'zuhur', displayName: 'Sholat Zuhur' },
-  { type: 'prayer', id: 'ashar', displayName: 'Sholat Ashar' },
-  { type: 'prayer', id: 'maghrib', displayName: 'Sholat Maghrib' },
-  { type: 'prayer', id: 'isya', displayName: 'Sholat Isya' },
+const numberActivity = (
+  id: ActivityId,
+  label: string,
+  aliases: string[],
+  sourceLabels: string[],
+  integer: boolean,
+  max: number | null,
+  unit: string
+): ActivityDefinition => ({
+  id,
+  label,
+  aliases,
+  sourceLabels,
+  kind: 'number',
+  integer,
+  min: 0,
+  max,
+  unit,
+});
+const booleanActivity = (
+  id: ActivityId,
+  label: string,
+  aliases: string[],
+  sourceLabels: string[]
+): ActivityDefinition => ({
+  id,
+  label,
+  aliases,
+  sourceLabels,
+  kind: 'boolean',
+  integer: false,
+  min: 0,
+  max: null,
+  unit: 'pelaksanaan',
+});
+export const ACTIVITIES: readonly ActivityDefinition[] = [
+  numberActivity(
+    'subuh',
+    'Subuh',
+    ['subuh', 'shubuh', 'fajr'],
+    ["Subuh Berjama'ah/Awal Waktu"],
+    true,
+    3,
+    'skor'
+  ),
+  numberActivity(
+    'dzuhur',
+    'Zuhur',
+    ['dzuhur', 'zuhur', 'dhuhr', 'zhuhur'],
+    ["Dzuhur Berjama'ah/Awal Waktu", "Zuhur Berjama'ah/Awal Waktu"],
+    true,
+    3,
+    'skor'
+  ),
+  numberActivity(
+    'ashar',
+    'Ashar',
+    ['ashar', 'asar', 'asr'],
+    ["Ashar Berjama'ah/Awal Waktu"],
+    true,
+    3,
+    'skor'
+  ),
+  numberActivity(
+    'maghrib',
+    'Maghrib',
+    ['maghrib', 'magrib'],
+    ["Maghrib Berjama'ah/Awal Waktu"],
+    true,
+    3,
+    'skor'
+  ),
+  numberActivity(
+    'isya',
+    'Isya',
+    ['isya', "isya'", 'isha'],
+    ["Isya Berjama'ah/Awal Waktu"],
+    true,
+    3,
+    'skor'
+  ),
+  numberActivity(
+    'rawatib',
+    'Rawatib',
+    ['rawatib', 'sholat sunnah rawatib', 'salat sunnah rawatib'],
+    ['Sholat sunnah rawatib'],
+    true,
+    null,
+    'kali'
+  ),
+  numberActivity(
+    'tilawah',
+    'Tilawah',
+    ['tilawah', 'baca quran'],
+    ['Tilawah Al Quran (halaman)'],
+    false,
+    100,
+    'halaman'
+  ),
+  booleanActivity(
+    'murojaah',
+    'Murojaah',
+    ['murojaah', 'murajaah'],
+    ["Muroja'ah Al Quran (halaman)", "Muroja'ah Al Quran", 'Murojaah']
+  ),
+  booleanActivity(
+    'matsurat_pagi',
+    'Al-Matsurat Pagi',
+    ['al-matsurat pagi', 'matsurat pagi', 'almatsurat pagi'],
+    ['Al-Matsurat Pagi']
+  ),
+  booleanActivity(
+    'matsurat_petang',
+    'Al-Matsurat Petang',
+    ['al-matsurat petang', 'matsurat petang', 'matsurat sore', 'almatsurat petang'],
+    ['Al-Matsurat Petang']
+  ),
+  booleanActivity(
+    'dhuha',
+    'Dhuha',
+    ['dhuha', 'duha', 'sholat dhuha'],
+    ['Sholat Dhuha (pelaksanaan)']
+  ),
+  booleanActivity(
+    'tahajjud',
+    'Tahajjud',
+    ['tahajjud', 'tahajud', 'sholat tahajjud'],
+    ['Sholat Tahajjud (pelaksanaan)']
+  ),
+  booleanActivity(
+    'infaq',
+    'Infaq',
+    ['infaq', 'infak', 'sedekah'],
+    ['Infaq/Ajak Infaq (pelaksanaan)']
+  ),
+  booleanActivity(
+    'puasa_sunnah',
+    'Puasa Sunnah',
+    ['puasa sunnah', 'shaum sunnah', 'puasa sunah'],
+    ['Shaum/Puasa Sunnah']
+  ),
+  booleanActivity(
+    'merapikan_kamar',
+    'Merapikan Kamar',
+    ['merapikan kamar', 'rapikan kamar', 'kamar rapi'],
+    ['Merapikan Kamar (Setiap Hari)']
+  ),
 ];
-
-/**
- * Validate if a score is valid for a prayer
- */
-export function isValidPrayerScore(score: number): score is PrayerScore {
-  return PRAYER_SCORE_VALUES.includes(score as PrayerScore);
+export class DomainError extends Error {
+  constructor(
+    readonly code: string,
+    message: string
+  ) {
+    super(message);
+    this.name = 'DomainError';
+  }
 }
-
-/**
- * Get prayer by ID
- */
-export function getPrayerById(id: string): ActivityId | undefined {
-  return DEFAULT_ACTIVITIES.find(a => a.id === id && a.type === 'prayer');
+export function activity(id: ActivityId): ActivityDefinition {
+  const result = ACTIVITIES.find((a) => a.id === id);
+  if (!result) throw new DomainError('ACTIVITY_INVALID', 'Aktivitas tidak dikenal.');
+  return result;
 }
-
-/**
- * Get all default prayers
- */
-export function getAllPrayers(): ActivityId[] {
-  return DEFAULT_ACTIVITIES.filter(a => a.type === 'prayer');
+export function validateValue(id: ActivityId, value: number | boolean): TypedCellValue {
+  const a = activity(id);
+  if (a.kind === 'boolean' && typeof value === 'boolean') return { kind: 'boolean', value };
+  if (
+    a.kind === 'number' &&
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= a.min &&
+    (a.max === null || value <= a.max) &&
+    (!a.integer || Number.isSafeInteger(value))
+  )
+    return { kind: 'number', value };
+  throw new DomainError(
+    'VALUE_OUT_OF_RANGE',
+    `Nilai ${a.label} tidak sesuai. ${a.kind === 'boolean' ? 'Gunakan sudah/belum.' : `Gunakan angka ${a.min}${a.max === null ? ' atau lebih' : `–${a.max}`}${a.integer ? ' bulat' : ''}.`}`
+  );
 }
-
-/**
- * Get activity display name
- */
-export function getActivityDisplayName(type: ActivityType, id: string): string {
-  const activity = DEFAULT_ACTIVITIES.find(a => a.type === type && a.id === id);
-  return activity?.displayName ?? `${type}:${id}`;
+export function sameValue(a: TypedCellValue, b: TypedCellValue): boolean {
+  return a.kind === b.kind && (a.kind === 'blank' || (b.kind !== 'blank' && a.value === b.value));
+}
+export function displayValue(value: TypedCellValue): string {
+  return value.kind === 'blank'
+    ? 'belum diisi'
+    : value.kind === 'boolean'
+      ? value.value
+        ? 'sudah'
+        : 'belum'
+      : String(value.value);
+}
+export function normalizeLabel(text: string): string {
+  return text
+    .normalize('NFKC')
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/[’‘`]/g, "'")
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 }

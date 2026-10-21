@@ -1,0 +1,10 @@
+{
+	admin 127.0.0.1:2019
+}
+
+# Change this hostname only after its DNS points to the VPS.
+app.sdj-rumah-kepemimpinan.my.id {
+	encode zstd gzip
+	header Referrer-Policy "no-referrer"
+	reverse_proxy 127.0.0.1:3001
+}

@@ -7,19 +7,15 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --project tsconfig.build.json --watch",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.check.json"
   },
   "dependencies": {},
-  "devDependencies": {
-    "typescript": "^5.7.0"
-  }
+  "devDependencies": {}
 }

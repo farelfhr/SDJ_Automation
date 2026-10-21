@@ -1,0 +1,26 @@
+[Unit]
+Description=SDJ API
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+User=sdj
+Group=sdj
+WorkingDirectory=/opt/sdj/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/sdj/backend.env
+ExecStart=/opt/sdj/node/bin/node --use-system-ca apps/api/dist/index.js
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=45
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+MemoryMax=384M
+
+[Install]
+WantedBy=multi-user.target

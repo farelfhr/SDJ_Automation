@@ -1,35 +1,11 @@
-AI Provider Configuration
-========================
+# Model dan routing AI
 
-This folder contains AI model configurations for SDJ Assistant.
+Kontrak aktif dijelaskan pada [ADR 0012](../../docs/adr/0012-conversation-and-reminders.md). Parser dan pending sederhana ditangani tanpa model. Prioritas target sehat: Groq, Gemini, OpenRouter, NVIDIA; maksimal dua percobaan, enam detik per percobaan, deadline luar 12 detik. Reservasi, kuota dan cooldown tetap bersama di PostgreSQL. Endpoint/model/credential tetap dari konfigurasi backend; tidak ada retry interpretasi pada gateway.
 
-## Providers
+OpenRouter tetap dibatasi router/model gratis dan harga prompt/completion nol, `data_collection: deny`, serta consent provider v2. Consent onboarding baru dan DM konsisten; persetujuan lama tidak diperluas otomatis. Detail layanan berada pada halaman privasi.
 
-### Groq (Primary)
-- Model: llama-3.3-70b-versatile
-- Use case: Fast command interpretation
-- Rate limit: 30 requests/minute
+Batas output tetap 4096 untuk Groq dengan reasoning low dan 2048 untuk provider lain. Template balasan/reminder tidak memakai AI. Usage total dan durasi percobaan dicatat jika tersedia; token NULL bukan nol.
 
-### Google Gemini (Fallback)
-- Model: gemini-2.0-flash
-- Use case: Alternative interpretation
-- Rate limit: 15 requests/minute
+`pnpm eval:ai` menampilkan dataset tanpa API. `pnpm eval:ai --conversation --live --provider=groq --limit=17` menguji parser lalu model pada 17 kasus percakapan sintetis. Gunakan `--model-only` untuk adapter saja dan `--retry-failed` untuk mengulang kasus gagal secara eksplisit. Report memakai fingerprint prompt, mode, model dan resume. Kesetaraan dinilai melalui efek domain, bukan hanya ejaan tanggal JSON. Dataset dasar 100 kasus tetap tersedia; 17 kasus percakapan atau satu smoke bukan kelulusan seluruh provider/100 kasus.
 
-### Zhipu GLM (Secondary Fallback)
-- Model: glm-4-flash
-- Use case: Secondary fallback
-- Rate limit: 60 requests/minute
-
-## Configuration
-
-AI settings are managed via environment variables:
-
-```
-GROQ_API_KEY=gsk_...
-GEMINI_API_KEY=AQ.0...
-GLM_API_KEY=nvapi-...
-
-AI_QUOTA_USER_PER_MINUTE=5
-AI_QUOTA_USER_PER_DAY=50
-ENABLE_AI_INTERPRETATION=true
-```
+Batas kuota lokal konservatif tidak mengubah paket provider. Evaluasi live harus opt-in; hanya fixture sintetis, tanpa Google Sheets atau WhatsApp peserta.
